@@ -10,7 +10,8 @@
     <nav class="navbar">
         <div class="nav-brand">EOAT Tracker</div>
         <div class="nav-links">
-            <a href="/" class="{% if request.path == '/' %}active{% endif %}">Dashboard</a>
+            <a href="/" class="{% if request.path == '/' %}active{% endif %}">Home</a>
+            <a href="/dashboard" class="{% if request.path == '/dashboard' %}active{% endif %}">Dashboard</a>
             <a href="/kanban" class="{% if request.path == '/kanban' %}active{% endif %}">Kanban</a>
             <a href="/timeline" class="{% if request.path == '/timeline' %}active{% endif %}">Timeline</a>
         </div>

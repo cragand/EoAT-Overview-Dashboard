@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}EOAT Tracker — Home{% endblock %}
+{% block content %}
+<div class="dashboard-header">
+    <h1>EOAT Tracker</h1>
+    <p class="home-subtitle">{{ device_count }} devices tracked · {{ event_count }} work events · Last updated {{ last_sync }}</p>
+</div>
+
+<div class="home-grid">
+    <a href="/dashboard" class="home-tile">
+        <div class="tile-icon">📋</div>
+        <div class="tile-title">Fleet Dashboard</div>
+        <div class="tile-desc">Sortable table of all EOAT devices with search and filters</div>
+        <div class="tile-stats">
+            {% for status, count in status_counts.items() %}
+            <span class="tile-stat"><span class="tile-stat-count">{{ count }}</span> {{ status }}</span>
+            {% endfor %}
+        </div>
+    </a>
+
+    <a href="/timeline" class="home-tile">
+        <div class="tile-icon">📊</div>
+        <div class="tile-title">Timeline</div>
+        <div class="tile-desc">Gantt-style chart showing device assignments and work events over time</div>
+        <div class="tile-stats">
+            <span class="tile-stat"><span class="tile-stat-count">{{ devices_with_events }}</span> devices with events</span>
+        </div>
+    </a>
+
+    <a href="/kanban" class="home-tile">
+        <div class="tile-icon">📌</div>
+        <div class="tile-title">Kanban Board</div>
+        <div class="tile-desc">Devices grouped by assignment and status in card columns</div>
+        <div class="tile-stats">
+            {% for a, count in assignment_counts.items() %}
+            <span class="tile-stat"><span class="tile-stat-count">{{ count }}</span> {{ a }}</span>
+            {% endfor %}
+        </div>
+    </a>
+</div>
+{% endblock %}

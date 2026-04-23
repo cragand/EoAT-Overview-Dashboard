@@ -17,6 +17,31 @@ def create_app():
         auto_import()
 
     @app.route("/")
+    def home():
+        devices = EoatDevice.query.all()
+        events = EoatEvent.query.all()
+        status_counts = {}
+        assignment_counts = {}
+        for d in devices:
+            if d.status:
+                status_counts[d.status] = status_counts.get(d.status, 0) + 1
+            if d.assignment:
+                assignment_counts[d.assignment] = assignment_counts.get(d.assignment, 0) + 1
+        devices_with_events = len(set(
+            e.serial_number for e in events if e.serial_number and e.device_id
+        ))
+        from models import SyncLog
+        last_log = SyncLog.query.order_by(SyncLog.timestamp.desc()).first()
+        last_sync = last_log.timestamp.strftime("%Y-%m-%d %H:%M") if last_log else "Never"
+        return render_template("home.html",
+                               device_count=len(devices),
+                               event_count=len(events),
+                               status_counts=status_counts,
+                               assignment_counts=assignment_counts,
+                               devices_with_events=devices_with_events,
+                               last_sync=last_sync)
+
+    @app.route("/dashboard")
     def dashboard():
         devices = EoatDevice.query.order_by(EoatDevice.name).all()
         status_counts = {}
