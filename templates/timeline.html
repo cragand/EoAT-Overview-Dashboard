@@ -10,7 +10,11 @@
             <option value="12" selected>Last 12 Months</option>
             <option value="24">Last 2 Years</option>
             <option value="all">Full History</option>
+            <option value="custom">Custom Range</option>
         </select>
+        <input type="date" id="range-start" class="filter-select" style="display:none">
+        <span id="range-sep" style="display:none;color:var(--text-muted);align-self:center">to</span>
+        <input type="date" id="range-end" class="filter-select" style="display:none">
         <select id="type-filter" class="filter-select">
             <option value="">All Types</option>
             {% for t in eoat_types %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
@@ -82,11 +86,24 @@ function renderGantt() {
     var typeF = document.getElementById('type-filter').value;
     var assignF = document.getElementById('assignment-filter').value;
     var container = document.getElementById('gantt-container');
+    var startInput = document.getElementById('range-start');
+    var endInput = document.getElementById('range-end');
+    var sep = document.getElementById('range-sep');
+
+    // Show/hide custom date inputs
+    var isCustom = range === 'custom';
+    startInput.style.display = isCustom ? '' : 'none';
+    endInput.style.display = isCustom ? '' : 'none';
+    sep.style.display = isCustom ? '' : 'none';
 
     var now = new Date();
     var minDate, maxDate = now;
 
-    if (range === 'all') {
+    if (isCustom) {
+        if (!startInput.value || !endInput.value) return;
+        minDate = new Date(startInput.value);
+        maxDate = new Date(endInput.value);
+    } else if (range === 'all') {
         minDate = new Date('2024-01-01');
         TIMELINE_DATA.forEach(function(d) {
             d.events.forEach(function(e) {
@@ -175,6 +192,8 @@ function renderGantt() {
 document.getElementById('range-filter').addEventListener('change', renderGantt);
 document.getElementById('type-filter').addEventListener('change', renderGantt);
 document.getElementById('assignment-filter').addEventListener('change', renderGantt);
+document.getElementById('range-start').addEventListener('change', renderGantt);
+document.getElementById('range-end').addEventListener('change', renderGantt);
 renderGantt();
 </script>
 {% endblock %}
