@@ -32,9 +32,50 @@
 <div class="gantt-wrapper" id="gantt-wrapper">
     <div class="gantt-container" id="gantt-container"></div>
 </div>
+<div class="event-popup" id="event-popup" style="display:none">
+    <div class="popup-header">
+        <span class="popup-title" id="popup-title"></span>
+        <button class="popup-close" id="popup-close">✕</button>
+    </div>
+    <div class="popup-body" id="popup-body"></div>
+</div>
+<div class="popup-overlay" id="popup-overlay" style="display:none"></div>
 
 <script>
 var TIMELINE_DATA = {{ timeline_data | tojson }};
+var popup = document.getElementById('event-popup');
+var overlay = document.getElementById('popup-overlay');
+
+function closePopup() { popup.style.display = 'none'; overlay.style.display = 'none'; }
+document.getElementById('popup-close').addEventListener('click', closePopup);
+document.getElementById('popup-overlay').addEventListener('click', closePopup);
+
+function showEventPopup(evt, x, y) {
+    document.getElementById('popup-title').textContent = evt.name;
+    var html = '<div class="popup-field"><span class="popup-label">Date</span>' + evt.date + '</div>';
+    if (evt.type) html += '<div class="popup-field"><span class="popup-label">Category</span>' + evt.type + '</div>';
+    if (evt.section) html += '<div class="popup-field"><span class="popup-label">Section</span>' + evt.section + '</div>';
+    if (evt.performed_by) html += '<div class="popup-field"><span class="popup-label">Assignee</span>' + evt.performed_by + '</div>';
+    if (evt.site) html += '<div class="popup-field"><span class="popup-label">Site</span>' + evt.site + '</div>';
+    if (evt.workcell) html += '<div class="popup-field"><span class="popup-label">Workcell</span>' + evt.workcell + '</div>';
+    html += '<div class="popup-field"><span class="popup-label">Status</span>' + (evt.completed ? '✓ Completed' : '○ Open') + '</div>';
+    if (evt.description) {
+        var desc = evt.description.replace(/\n/g, '<br>').substring(0, 300);
+        html += '<div class="popup-desc">' + desc + '</div>';
+    }
+    if (evt.task_gid) {
+        html += '<div class="popup-link"><a href="https://app.asana.com/0/0/' + evt.task_gid + '" target="_blank">Open in Asana ↗</a></div>';
+    }
+    document.getElementById('popup-body').innerHTML = html;
+    popup.style.display = 'block';
+    overlay.style.display = 'block';
+    // Position near click but keep on screen
+    var rect = popup.getBoundingClientRect();
+    var px = Math.min(x + 10, window.innerWidth - 340);
+    var py = Math.min(y + 10, window.innerHeight - rect.height - 20);
+    popup.style.left = px + 'px';
+    popup.style.top = py + 'px';
+}
 
 function renderGantt() {
     var range = document.getElementById('range-filter').value;
@@ -83,7 +124,7 @@ function renderGantt() {
     });
     html += '</div></div>';
 
-    devices.forEach(function(d) {
+    devices.forEach(function(d, di) {
         html += '<div class="gantt-row" data-serial="' + d.serial + '">';
         html += '<div class="gantt-label-col"><a href="/device/' + d.serial + '">' + d.name + '</a>';
         html += '<span class="gantt-label-sub">' + (d.current_location || '') + '</span></div>';
@@ -107,19 +148,28 @@ function renderGantt() {
         }
 
         // Draw event markers
-        d.events.forEach(function(e) {
+        d.events.forEach(function(e, ei) {
             var ed = new Date(e.date);
             if (ed < minDate || ed > maxDate) return;
             var left = (ed - minDate) / totalMs * 100;
             var cls = e.completed ? 'event-complete' : 'event-open';
-            var title = e.name + '\n' + e.date + (e.performed_by ? '\nBy: ' + e.performed_by : '');
-            html += '<div class="gantt-event ' + cls + '" style="left:' + left + '%" title="' + title.replace(/"/g,'&quot;') + '"></div>';
+            html += '<div class="gantt-event ' + cls + '" style="left:' + left + '%" data-device="' + di + '" data-event="' + ei + '"></div>';
         });
 
         html += '</div></div>';
     });
 
     container.innerHTML = html;
+
+    // Attach click handlers to event dots
+    container.querySelectorAll('.gantt-event').forEach(function(el) {
+        el.addEventListener('click', function(ev) {
+            var di = parseInt(el.getAttribute('data-device'));
+            var ei = parseInt(el.getAttribute('data-event'));
+            showEventPopup(devices[di].events[ei], ev.clientX, ev.clientY);
+            ev.stopPropagation();
+        });
+    });
 }
 
 document.getElementById('range-filter').addEventListener('change', renderGantt);

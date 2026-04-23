@@ -71,6 +71,11 @@ def create_app():
                     "type": e.event_type,
                     "performed_by": e.performed_by,
                     "completed": e.completed_at is not None,
+                    "description": (e.description or "")[:300],
+                    "task_gid": e.asana_task_gid,
+                    "section": e.section,
+                    "site": e.site,
+                    "workcell": e.workcell_id,
                 })
 
             # Infer assignment periods from events
