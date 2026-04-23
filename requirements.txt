@@ -1,0 +1,5 @@
+python-dotenv
+requests
+urllib3<2
+flask
+flask-sqlalchemy

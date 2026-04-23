@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}{{ device.serial_number }} — EOAT Tracker{% endblock %}
+{% block content %}
+<a href="/" class="back-link">← Back to Dashboard</a>
+
+<div class="device-header">
+    <h1>{{ device.serial_number }}</h1>
+    <span class="status-pill pill-{{ device.status|lower|replace(' ', '-') }}">{{ device.status }}</span>
+</div>
+
+<div class="device-details">
+    <div class="detail-grid">
+        <div class="detail-item"><span class="detail-label">Version</span><span class="detail-value">{{ device.version_id or '—' }}</span></div>
+        <div class="detail-item"><span class="detail-label">Assignment</span><span class="detail-value">{{ device.assignment or '—' }}</span></div>
+        <div class="detail-item"><span class="detail-label">Location</span><span class="detail-value">{{ device.current_location or '—' }}</span></div>
+        <div class="detail-item"><span class="detail-label">Workcell</span><span class="detail-value">{{ device.workcell_id or '—' }}</span></div>
+        <div class="detail-item"><span class="detail-label">Customer</span><span class="detail-value">{{ device.customer or '—' }}</span></div>
+        <div class="detail-item"><span class="detail-label">Allocation</span><span class="detail-value">{{ device.allocation or '—' }}</span></div>
+        <div class="detail-item"><span class="detail-label">Build Location</span><span class="detail-value">{{ device.build_location or '—' }}</span></div>
+        <div class="detail-item"><span class="detail-label">Last Synced</span><span class="detail-value">{{ device.last_synced.strftime('%Y-%m-%d %H:%M') if device.last_synced else '—' }}</span></div>
+    </div>
+</div>
+
+<h2>Event History</h2>
+{% if events %}
+<div class="timeline">
+    {% for e in events %}
+    <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-content">
+            <div class="timeline-header">
+                <span class="event-type">{{ e.event_type }}</span>
+                <span class="event-date">{{ e.date.strftime('%Y-%m-%d') if e.date else '—' }}</span>
+            </div>
+            <div class="event-description">{{ e.description }}</div>
+            <div class="event-meta">By {{ e.performed_by or 'Unknown' }} · Source: {{ e.source_project }}</div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p class="no-events">No events recorded for this device.</p>
+{% endif %}
+{% endblock %}
