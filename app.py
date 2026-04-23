@@ -13,8 +13,8 @@ def create_app():
 
     with app.app_context():
         db.create_all()
-        from seed import seed_mock_data
-        seed_mock_data()
+        from auto_import import auto_import
+        auto_import()
 
     @app.route("/")
     def dashboard():
