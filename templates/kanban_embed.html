@@ -1,0 +1,37 @@
+{% extends "base_embed.html" %}
+{% block title %}EOAT Kanban{% endblock %}
+{% block content %}
+<div class="dashboard-header">
+    <h1>EOAT Status Board</h1>
+</div>
+<div class="kanban-board">
+    {% for col_name, devices in columns.items() %}
+    <div class="kanban-column">
+        <div class="kanban-column-header">
+            <h3>{{ col_name }}</h3>
+            <span class="kanban-count">{{ devices|length }}</span>
+        </div>
+        <div class="kanban-cards">
+            {% for d in devices %}
+            <a href="/device/{{ d.serial_number }}" class="kanban-card">
+                <div class="card-serial">{{ d.serial_number }}</div>
+                <div class="card-version">{{ d.version_id or '—' }}</div>
+                {% if d.current_location %}
+                <div class="card-field"><span class="field-icon">📍</span> {{ d.current_location }}</div>
+                {% endif %}
+                {% if d.workcell_id %}
+                <div class="card-field"><span class="field-icon">⚙️</span> {{ d.workcell_id }}</div>
+                {% endif %}
+                {% if d.allocation %}
+                <div class="card-field"><span class="field-icon">📋</span> {{ d.allocation }}</div>
+                {% endif %}
+                {% if d.assignment %}
+                <div class="card-assignment assignment-{{ d.assignment|lower }}">{{ d.assignment }}</div>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

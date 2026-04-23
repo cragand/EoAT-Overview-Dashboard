@@ -1,8 +1,15 @@
 """EOAT Tracker Dashboard — Flask application."""
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 from config import DATABASE_PATH
 from db import db
 from models import EoatDevice, EoatEvent
+
+
+def _template(name):
+    """Return embed variant of template if ?embed=1."""
+    if request.args.get('embed') == '1':
+        return name.replace('.html', '_embed.html')
+    return name
 
 
 def create_app():
@@ -54,7 +61,7 @@ def create_app():
                 eoat_types.add(d.eoat_type)
             if d.assignment:
                 assignments.add(d.assignment)
-        return render_template("dashboard.html", devices=devices,
+        return render_template(_template("dashboard.html"), devices=devices,
                                status_counts=status_counts,
                                eoat_types=sorted(eoat_types),
                                assignments=sorted(assignments))
@@ -66,7 +73,7 @@ def create_app():
         for d in devices:
             col = d.assignment or d.status or "Unknown"
             columns.setdefault(col, []).append(d)
-        return render_template("kanban.html", columns=columns)
+        return render_template(_template("kanban.html"), columns=columns)
 
     @app.route("/device/<serial_number>")
     def device_detail(serial_number):
@@ -165,7 +172,7 @@ def create_app():
                 "periods": periods,
             })
 
-        return render_template("timeline.html", timeline_data=timeline_data,
+        return render_template(_template("timeline.html"), timeline_data=timeline_data,
                                eoat_types=eoat_types, assignments=assignments)
 
     @app.route("/api/devices")

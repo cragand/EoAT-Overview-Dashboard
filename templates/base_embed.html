@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}EOAT Tracker{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body { background: transparent; }
+        .container { padding: 8px; max-width: none; }
+        .dashboard-header h1 { font-size: 0; height: 0; margin: 0; overflow: hidden; }
+        .dashboard-header { margin-bottom: 8px; }
+        .controls { margin-bottom: 8px; }
+        .status-summary { gap: 6px; }
+        .status-badge { padding: 6px 10px; min-width: 60px; }
+        .status-badge .count { font-size: 18px; }
+        .status-badge .label { font-size: 9px; }
+    </style>
+</head>
+<body>
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>
