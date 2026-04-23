@@ -38,11 +38,18 @@ def _extract_eoat_type(name):
     return m.group(1) if m else None
 
 
+def _normalize(text):
+    """Normalize unicode bold/styled text to plain ASCII for matching."""
+    import unicodedata
+    return unicodedata.normalize('NFKC', text).lower()
+
+
 def _find_col(headers, *candidates):
-    """Find a column by trying multiple name variants."""
+    """Find a column by trying multiple name variants (unicode-aware)."""
     for c in candidates:
+        cl = c.lower()
         for h in headers:
-            if c.lower() in h.lower():
+            if cl in _normalize(h):
                 return h
     return None
 
