@@ -50,6 +50,94 @@ def create_app():
             .order_by(EoatEvent.date.desc()).all()
         return render_template("device_detail.html", device=device, events=events)
 
+    @app.route("/timeline")
+    def timeline():
+        devices = EoatDevice.query.order_by(EoatDevice.name).all()
+        eoat_types = sorted(set(d.eoat_type for d in devices if d.eoat_type))
+        assignments = sorted(set(d.assignment for d in devices if d.assignment))
+
+        timeline_data = []
+        for d in devices:
+            events = EoatEvent.query.filter_by(serial_number=d.serial_number)\
+                .order_by(EoatEvent.date.asc()).all()
+
+            evt_list = []
+            for e in events:
+                if not e.date:
+                    continue
+                evt_list.append({
+                    "date": e.date.strftime("%Y-%m-%d"),
+                    "name": e.event_name or e.event_type or "Event",
+                    "type": e.event_type,
+                    "performed_by": e.performed_by,
+                    "completed": e.completed_at is not None,
+                })
+
+            # Infer assignment periods from events
+            periods = []
+            current_period = None
+            for e in events:
+                if not e.date:
+                    continue
+                etype = (e.event_type or "").lower()
+                ename = (e.event_name or "").lower()
+
+                if "repair" in etype or "repair" in ename:
+                    period_type = "Repairs"
+                elif "install" in ename or "deployment" in ename:
+                    period_type = "Deployment"
+                elif "qa" in ename or "qc" in ename or "test" in ename:
+                    period_type = "QA/Test"
+                else:
+                    continue
+
+                if current_period and current_period["type"] != period_type:
+                    current_period["end"] = e.date.strftime("%Y-%m-%d")
+                    periods.append(current_period)
+                    current_period = None
+
+                if not current_period:
+                    current_period = {
+                        "type": period_type,
+                        "start": e.date.strftime("%Y-%m-%d"),
+                        "end": None,
+                        "location": e.site,
+                        "start_label": e.event_name,
+                    }
+
+            if current_period:
+                periods.append(current_period)
+
+            # Add current assignment as an ongoing period if no events infer it
+            if d.assignment and (not periods or periods[-1]["type"] == "Repairs"):
+                # Find earliest event or use a default start
+                start = events[0].date.strftime("%Y-%m-%d") if events and events[0].date else "2025-01-01"
+                if periods and periods[-1].get("end"):
+                    start = periods[-1]["end"]
+                elif periods and not periods[-1].get("end"):
+                    pass  # last period is still open
+                else:
+                    periods.append({
+                        "type": d.assignment,
+                        "start": start,
+                        "end": None,
+                        "location": d.current_location,
+                        "start_label": d.assignment,
+                    })
+
+            timeline_data.append({
+                "serial": d.serial_number,
+                "name": d.name or d.serial_number,
+                "eoat_type": d.eoat_type,
+                "assignment": d.assignment,
+                "current_location": d.current_location,
+                "events": evt_list,
+                "periods": periods,
+            })
+
+        return render_template("timeline.html", timeline_data=timeline_data,
+                               eoat_types=eoat_types, assignments=assignments)
+
     @app.route("/api/devices")
     def api_devices():
         devices = EoatDevice.query.order_by(EoatDevice.name).all()

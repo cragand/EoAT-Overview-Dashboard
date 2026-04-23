@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}EOAT Timeline{% endblock %}
+{% block content %}
+<div class="dashboard-header">
+    <h1>EOAT Fleet Timeline</h1>
+    <div class="controls" style="margin-top:12px">
+        <select id="range-filter" class="filter-select">
+            <option value="3">Last 3 Months</option>
+            <option value="6">Last 6 Months</option>
+            <option value="12" selected>Last 12 Months</option>
+            <option value="24">Last 2 Years</option>
+            <option value="all">Full History</option>
+        </select>
+        <select id="type-filter" class="filter-select">
+            <option value="">All Types</option>
+            {% for t in eoat_types %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+        </select>
+        <select id="assignment-filter" class="filter-select">
+            <option value="">All Assignments</option>
+            {% for a in assignments %}<option value="{{ a }}">{{ a }}</option>{% endfor %}
+        </select>
+    </div>
+</div>
+
+<div class="timeline-legend">
+    <span class="legend-item"><span class="legend-color" style="background:var(--deployed)"></span> Deployment</span>
+    <span class="legend-item"><span class="legend-color" style="background:var(--storage)"></span> Spare</span>
+    <span class="legend-item"><span class="legend-color" style="background:var(--maintenance)"></span> Repairs</span>
+    <span class="legend-item"><span class="legend-dot"></span> Work Event</span>
+</div>
+
+<div class="gantt-wrapper" id="gantt-wrapper">
+    <div class="gantt-container" id="gantt-container"></div>
+</div>
+
+<script>
+var TIMELINE_DATA = {{ timeline_data | tojson }};
+
+function renderGantt() {
+    var range = document.getElementById('range-filter').value;
+    var typeF = document.getElementById('type-filter').value;
+    var assignF = document.getElementById('assignment-filter').value;
+    var container = document.getElementById('gantt-container');
+
+    var now = new Date();
+    var minDate, maxDate = now;
+
+    if (range === 'all') {
+        minDate = new Date('2024-01-01');
+        TIMELINE_DATA.forEach(function(d) {
+            d.events.forEach(function(e) {
+                var ed = new Date(e.date);
+                if (ed < minDate) minDate = ed;
+            });
+        });
+    } else {
+        minDate = new Date(now);
+        minDate.setMonth(minDate.getMonth() - parseInt(range));
+    }
+
+    var totalMs = maxDate - minDate;
+
+    // Filter devices
+    var devices = TIMELINE_DATA.filter(function(d) {
+        if (typeF && d.eoat_type !== typeF) return false;
+        if (assignF && d.assignment !== assignF) return false;
+        return true;
+    });
+
+    // Build month markers
+    var months = [];
+    var m = new Date(minDate.getFullYear(), minDate.getMonth(), 1);
+    while (m <= maxDate) {
+        months.push(new Date(m));
+        m.setMonth(m.getMonth() + 1);
+    }
+
+    var html = '<div class="gantt-header"><div class="gantt-label-col"></div><div class="gantt-bar-col">';
+    months.forEach(function(mo) {
+        var left = ((mo - minDate) / totalMs * 100);
+        var label = mo.toLocaleDateString('en-US', {month:'short', year:'2-digit'});
+        html += '<div class="gantt-month" style="left:' + left + '%">' + label + '</div>';
+    });
+    html += '</div></div>';
+
+    devices.forEach(function(d) {
+        html += '<div class="gantt-row" data-serial="' + d.serial + '">';
+        html += '<div class="gantt-label-col"><a href="/device/' + d.serial + '">' + d.name + '</a>';
+        html += '<span class="gantt-label-sub">' + (d.current_location || '') + '</span></div>';
+        html += '<div class="gantt-bar-col">';
+
+        // Draw assignment periods (inferred from events)
+        if (d.periods) {
+            d.periods.forEach(function(p) {
+                var start = new Date(p.start);
+                var end = p.end ? new Date(p.end) : maxDate;
+                if (end < minDate || start > maxDate) return;
+                if (start < minDate) start = minDate;
+                if (end > maxDate) end = maxDate;
+                var left = (start - minDate) / totalMs * 100;
+                var width = (end - start) / totalMs * 100;
+                var cls = 'period-' + (p.type || 'unknown').toLowerCase().replace(/\s+/g, '-');
+                var title = p.type + (p.location ? ' @ ' + p.location : '');
+                if (p.start_label) title += '\n' + p.start_label;
+                html += '<div class="gantt-period ' + cls + '" style="left:' + left + '%;width:' + Math.max(width, 0.3) + '%" title="' + title.replace(/"/g,'&quot;') + '"></div>';
+            });
+        }
+
+        // Draw event markers
+        d.events.forEach(function(e) {
+            var ed = new Date(e.date);
+            if (ed < minDate || ed > maxDate) return;
+            var left = (ed - minDate) / totalMs * 100;
+            var cls = e.completed ? 'event-complete' : 'event-open';
+            var title = e.name + '\n' + e.date + (e.performed_by ? '\nBy: ' + e.performed_by : '');
+            html += '<div class="gantt-event ' + cls + '" style="left:' + left + '%" title="' + title.replace(/"/g,'&quot;') + '"></div>';
+        });
+
+        html += '</div></div>';
+    });
+
+    container.innerHTML = html;
+}
+
+document.getElementById('range-filter').addEventListener('change', renderGantt);
+document.getElementById('type-filter').addEventListener('change', renderGantt);
+document.getElementById('assignment-filter').addEventListener('change', renderGantt);
+renderGantt();
+</script>
+{% endblock %}
