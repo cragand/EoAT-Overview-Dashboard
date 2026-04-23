@@ -1,26 +1,32 @@
-/* Dashboard table: search, filter, sort */
+/* Dashboard: search, filter, sort */
 document.addEventListener('DOMContentLoaded', function() {
-    const search = document.getElementById('search');
-    const filter = document.getElementById('status-filter');
-    const table = document.getElementById('device-table');
+    var search = document.getElementById('search');
+    var statusFilter = document.getElementById('status-filter');
+    var typeFilter = document.getElementById('type-filter');
+    var assignmentFilter = document.getElementById('assignment-filter');
+    var table = document.getElementById('device-table');
     if (!table) return;
-    const tbody = table.querySelector('tbody');
-    const rows = Array.from(tbody.querySelectorAll('tr'));
+    var tbody = table.querySelector('tbody');
+    var rows = Array.from(tbody.querySelectorAll('tr'));
 
     function applyFilters() {
-        const q = (search ? search.value : '').toLowerCase();
-        const status = filter ? filter.value : '';
+        var q = (search ? search.value : '').toLowerCase();
+        var status = statusFilter ? statusFilter.value : '';
+        var type = typeFilter ? typeFilter.value : '';
+        var assignment = assignmentFilter ? assignmentFilter.value : '';
         rows.forEach(function(row) {
-            const text = row.textContent.toLowerCase();
-            const rowStatus = row.getAttribute('data-status');
-            const matchSearch = !q || text.includes(q);
-            const matchStatus = !status || rowStatus === status;
-            row.style.display = (matchSearch && matchStatus) ? '' : 'none';
+            var text = row.textContent.toLowerCase();
+            var show = (!q || text.includes(q))
+                && (!status || row.getAttribute('data-status') === status)
+                && (!type || row.getAttribute('data-type') === type)
+                && (!assignment || row.getAttribute('data-assignment') === assignment);
+            row.style.display = show ? '' : 'none';
         });
     }
 
-    if (search) search.addEventListener('input', applyFilters);
-    if (filter) filter.addEventListener('change', applyFilters);
+    [search, statusFilter, typeFilter, assignmentFilter].forEach(function(el) {
+        if (el) el.addEventListener(el.tagName === 'INPUT' ? 'input' : 'change', applyFilters);
+    });
 
     // Column sorting
     var sortCol = null, sortAsc = true;
@@ -34,8 +40,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 var vb = b.children[idx].textContent.trim();
                 if (va === '—') va = '';
                 if (vb === '—') vb = '';
-                var cmp = va.localeCompare(vb, undefined, {numeric: true});
-                return sortAsc ? cmp : -cmp;
+                return sortAsc ? va.localeCompare(vb, undefined, {numeric: true})
+                               : vb.localeCompare(va, undefined, {numeric: true});
             });
             rows.forEach(function(row) { tbody.appendChild(row); });
         });

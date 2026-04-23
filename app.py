@@ -1,8 +1,8 @@
 """EOAT Tracker Dashboard — Flask application."""
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify
 from config import DATABASE_PATH
 from db import db
-from models import EoatDevice, EoatEvent, SyncLog
+from models import EoatDevice, EoatEvent
 
 
 def create_app():
@@ -18,20 +18,28 @@ def create_app():
 
     @app.route("/")
     def dashboard():
-        devices = EoatDevice.query.order_by(EoatDevice.serial_number).all()
+        devices = EoatDevice.query.order_by(EoatDevice.name).all()
         status_counts = {}
+        eoat_types = set()
+        assignments = set()
         for d in devices:
-            status_counts[d.status] = status_counts.get(d.status, 0) + 1
+            if d.status:
+                status_counts[d.status] = status_counts.get(d.status, 0) + 1
+            if d.eoat_type:
+                eoat_types.add(d.eoat_type)
+            if d.assignment:
+                assignments.add(d.assignment)
         return render_template("dashboard.html", devices=devices,
-                               status_counts=status_counts)
+                               status_counts=status_counts,
+                               eoat_types=sorted(eoat_types),
+                               assignments=sorted(assignments))
 
     @app.route("/kanban")
     def kanban():
-        devices = EoatDevice.query.order_by(EoatDevice.serial_number).all()
-        # Group by assignment/status for kanban columns
+        devices = EoatDevice.query.order_by(EoatDevice.name).all()
         columns = {}
         for d in devices:
-            col = d.status or "Unknown"
+            col = d.assignment or d.status or "Unknown"
             columns.setdefault(col, []).append(d)
         return render_template("kanban.html", columns=columns)
 
@@ -44,7 +52,7 @@ def create_app():
 
     @app.route("/api/devices")
     def api_devices():
-        devices = EoatDevice.query.order_by(EoatDevice.serial_number).all()
+        devices = EoatDevice.query.order_by(EoatDevice.name).all()
         return jsonify([d.to_dict() for d in devices])
 
     return app

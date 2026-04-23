@@ -14,11 +14,23 @@
 </div>
 
 <div class="controls">
-    <input type="text" id="search" placeholder="Search by serial, location, version..." class="search-input">
+    <input type="text" id="search" placeholder="Search by serial, location, type, workcell..." class="search-input">
     <select id="status-filter" class="filter-select">
         <option value="">All Statuses</option>
         {% for status in status_counts.keys() %}
         <option value="{{ status }}">{{ status }}</option>
+        {% endfor %}
+    </select>
+    <select id="type-filter" class="filter-select">
+        <option value="">All Types</option>
+        {% for t in eoat_types %}
+        <option value="{{ t }}">{{ t }}</option>
+        {% endfor %}
+    </select>
+    <select id="assignment-filter" class="filter-select">
+        <option value="">All Assignments</option>
+        {% for a in assignments %}
+        <option value="{{ a }}">{{ a }}</option>
         {% endfor %}
     </select>
 </div>
@@ -26,29 +38,31 @@
 <table class="device-table" id="device-table">
     <thead>
         <tr>
+            <th data-sort="name">Name</th>
             <th data-sort="serial_number">Serial #</th>
+            <th data-sort="eoat_type">Type</th>
             <th data-sort="version_id">Version</th>
             <th data-sort="status">Status</th>
             <th data-sort="assignment">Assignment</th>
             <th data-sort="current_location">Location</th>
             <th data-sort="workcell_id">Workcell</th>
-            <th data-sort="customer">Customer</th>
             <th data-sort="allocation">Allocation</th>
-            <th data-sort="build_location">Build Location</th>
+            <th data-sort="customer">Customer</th>
         </tr>
     </thead>
     <tbody>
         {% for d in devices %}
-        <tr class="status-row-{{ d.status|lower|replace(' ', '-') }}" data-status="{{ d.status }}">
-            <td><a href="/device/{{ d.serial_number }}">{{ d.serial_number }}</a></td>
+        <tr data-status="{{ d.status or '' }}" data-type="{{ d.eoat_type or '' }}" data-assignment="{{ d.assignment or '' }}">
+            <td><a href="/device/{{ d.serial_number }}">{{ d.name or d.serial_number }}</a></td>
+            <td>{{ d.serial_number }}</td>
+            <td>{{ d.eoat_type or '—' }}</td>
             <td>{{ d.version_id or '—' }}</td>
-            <td><span class="status-pill pill-{{ d.status|lower|replace(' ', '-') }}">{{ d.status or '—' }}</span></td>
-            <td>{{ d.assignment or '—' }}</td>
+            <td><span class="status-pill pill-{{ (d.status or '')|lower|replace(' ', '-') }}">{{ d.status or '—' }}</span></td>
+            <td><span class="assignment-tag assignment-{{ (d.assignment or '')|lower }}">{{ d.assignment or '—' }}</span></td>
             <td>{{ d.current_location or '—' }}</td>
             <td>{{ d.workcell_id or '—' }}</td>
-            <td>{{ d.customer or '—' }}</td>
             <td>{{ d.allocation or '—' }}</td>
-            <td>{{ d.build_location or '—' }}</td>
+            <td>{{ d.customer or '—' }}</td>
         </tr>
         {% endfor %}
     </tbody>
